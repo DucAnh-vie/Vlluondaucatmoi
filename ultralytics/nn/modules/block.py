@@ -277,10 +277,8 @@ class C2(nn.Module):
 class C2f(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+   def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
         """
-        Initialize a CSP bottleneck with 2 convolutions.
-
         Args:
             c1 (int): Input channels.
             c2 (int): Output channels.
@@ -291,9 +289,17 @@ class C2f(nn.Module):
         """
         super().__init__()
         self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+        self.cv1 = Conv(c1, self.c, 1, 1)  # Reduce input to hidden channels
+        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # Merge all features into output channels
+        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=(3, 3), e=1.0) for _ in range(n))
+
+    def forward(self, x):
+        """Modified forward pass without splitting."""
+        y = [self.cv1(x)]  # Single transformation without splitting
+        for m in self.m:
+            y.append(m(y[-1]))  # Sequentially process through Bottleneck layers
+        return self.cv2(torch.cat(y, 1))  # Merge outputs
+
 
     def forward(self, x):
         """Forward pass through C2f layer."""
@@ -453,9 +459,9 @@ class GhostBottleneck(nn.Module):
 class Bottleneck(nn.Module):
     """Standard bottleneck."""
 
-    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
+   def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
         """
-        Initialize a standard bottleneck module.
+        Initialize a modified bottleneck module.
 
         Args:
             c1 (int): Input channels.
@@ -466,15 +472,17 @@ class Bottleneck(nn.Module):
             e (float): Expansion ratio.
         """
         super().__init__()
-        c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, k[0], 1)
-        self.cv2 = Conv(c_, c2, k[1], 1, g=g)
-        self.add = shortcut and c1 == c2
+        c_ = int(c2 * e)  # Hidden channels
+        self.cv1 = Conv(c1, c_, k[0], 1)  # First convolution
+        self.cv2 = Conv(c_, c2, k[1], 1, g=g)  # Second convolution
+        self.add = shortcut and c1 == c2  # Check if shortcut is valid
 
     def forward(self, x):
-        """Apply bottleneck with optional shortcut connection."""
-        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
-
+        """Apply bottleneck with modified shortcut connection."""
+        y = self.cv1(x)  # First convolution
+        if self.add:
+            y = y + x  # Merge shortcut here (in the middle)
+        return self.cv2(y)  # Apply second convolution
 
 class BottleneckCSP(nn.Module):
     """CSP Bottleneck https://github.com/WongKinYiu/CrossStagePartialNetworks."""
