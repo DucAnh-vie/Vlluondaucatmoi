@@ -4,6 +4,12 @@ from ultralytics.models.yolo.detect import DetectionTrainer, DetectionValidator
 def parse_args():
     parser = argparse.ArgumentParser(description="Train và Validate YOLO model")
     parser.add_argument(
+        "--model", "-m",
+        type=str,
+        default="yolov8n.pt",
+        help="File weight/config của model (mặc định: yolov8n.pt)"
+    )
+    parser.add_argument(
         "--data", "-d",
         type=str,
         required=True,
@@ -28,6 +34,7 @@ def main():
 
     # Train
     trainer = DetectionTrainer(
+        model=args.model,
         data=args.data,
         epochs=args.epochs,
         imgsz=args.imgsz
@@ -36,6 +43,7 @@ def main():
 
     # Validate
     validator = DetectionValidator(
+        model=args.model,
         data=args.data,
         imgsz=args.imgsz
     )
