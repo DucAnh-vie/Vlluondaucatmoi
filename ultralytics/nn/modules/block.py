@@ -443,31 +443,16 @@ class GhostBottleneck(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    """Standard bottleneck."""
-    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
-        """
-        Initialize a modified bottleneck module.
-
-        Args:
-            c1 (int): Input channels.
-            c2 (int): Output channels.
-            shortcut (bool): Whether to use shortcut connection.
-            g (int): Groups for convolutions.
-            k (Tuple[int, int]): Kernel sizes for convolutions.
-            e (float): Expansion ratio.
-        """
+    def __init__(self, c1, c2, shortcut=True, g=1, e=0.5):
         super().__init__()
-        c_ = int(c2 * e)  # Hidden channels
-        self.cv1 = Conv(c1, c_, k[0], 1)  # First convolution
-        self.cv2 = Conv(c_, c2, k[1], 1, g=g)  # Second convolution
-        self.add = shortcut and c1 == c2  # Check if shortcut is valid
-    
+        hidden_channels = int(c2 * e)
+        self.cv1 = Conv(c1, hidden_channels, 1, 1)
+        self.cv2 = Conv(hidden_channels, c2, 3, 1, g=g)
+        self.add = shortcut and c1 == c2
+
     def forward(self, x):
-        """Apply bottleneck with modified shortcut connection."""
-        y = self.cv1(x)  # First convolution
-        if self.add:
-            y = y + x  # Merge shortcut here (in the middle)
-        return self.cv2(y)  # Apply second convolution
+        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+
 
 class BottleneckCSP(nn.Module):
     """CSP Bottleneck https://github.com/WongKinYiu/CrossStagePartialNetworks."""
