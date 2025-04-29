@@ -276,18 +276,19 @@ class C2(nn.Module):
 
 
 class C2f(nn.Module):
-    def __init__(self, c1, c2, n=1):
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1):  # <-- fix here
         super().__init__()
         self.c = c2 // 2
         self.cv1 = Conv(c1, self.c, 1, 1)
-        self.cv2 = Conv(self.c * (n + 1), c2, 1, 1)
-        self.m = nn.ModuleList([Bottleneck(self.c, self.c, shortcut=True) for _ in range(n)])
+        self.cv2 = Conv(self.c * (n + 1), c2, 1)
+        self.m = nn.ModuleList([Bottleneck(self.c, self.c, shortcut, g) for _ in range(n)])
 
     def forward(self, x):
         y = [self.cv1(x)]
         for m in self.m:
-            y.append(m(y[-1]))  # Pass correct shape
-        return self.cv2(torch.cat(y, dim=1))
+            y.append(m(y[-1]))
+        return self.cv2(torch.cat(y, 1))
+
 
 
 
