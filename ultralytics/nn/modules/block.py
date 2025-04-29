@@ -452,8 +452,7 @@ class GhostBottleneck(nn.Module):
 
 class Bottleneck(nn.Module):
     """Standard bottleneck."""
-
-   def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
+    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
         """
         Initialize a modified bottleneck module.
 
@@ -470,7 +469,7 @@ class Bottleneck(nn.Module):
         self.cv1 = Conv(c1, c_, k[0], 1)  # First convolution
         self.cv2 = Conv(c_, c2, k[1], 1, g=g)  # Second convolution
         self.add = shortcut and c1 == c2  # Check if shortcut is valid
-
+    
     def forward(self, x):
         """Apply bottleneck with modified shortcut connection."""
         y = self.cv1(x)  # First convolution
