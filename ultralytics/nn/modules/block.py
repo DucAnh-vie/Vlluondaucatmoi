@@ -288,6 +288,7 @@ class C2f(nn.Module):
             e (float): Expansion ratio.
         """
         super().__init__()
+        print(f"[DEBUG] C2f.__init__ called with c1={c1}, c2={c2}, n={n}, shortcut={shortcut}, g={g}, e={e}")
         self.c = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, self.c, 1, 1)  # Reduce input to hidden channels
         self.cv2 = Conv((1 + n) * self.c, c2, 1)  # Merge all features into output channels
@@ -303,15 +304,19 @@ class C2f(nn.Module):
 
     def forward(self, x):
         """Forward pass through C2f layer."""
+        print(f"[DEBUG] C2f.forward called with input shape: {x.shape}")
         y = list(self.cv1(x).chunk(2, 1))
         y.extend(m(y[-1]) for m in self.m)
+        print(f"[DEBUG] C2f.forward output shape: {out.shape}")
         return self.cv2(torch.cat(y, 1))
 
     def forward_split(self, x):
         """Forward pass using split() instead of chunk()."""
+        print(f"[DEBUG] C2f.forward_split called with input shape: {x.shape}")
         y = self.cv1(x).split((self.c, self.c), 1)
         y = [y[0], y[1]]
         y.extend(m(y[-1]) for m in self.m)
+        print(f"[DEBUG] C2f.forward_split output shape: {out.shape}")
         return self.cv2(torch.cat(y, 1))
 
 
