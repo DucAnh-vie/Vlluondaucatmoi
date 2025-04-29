@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
+from ultralytics.utils import LOGGER
 
 from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad
 from .transformer import TransformerBlock
@@ -296,20 +297,18 @@ class C2f(nn.Module):
 
     def forward(self, x):
         """Modified forward pass without splitting."""
-        print(f"[DEBUG] C2f.forward called with input shape: {x.shape}")
+        LOGGER.info(f"[DEBUG] C2f.forward called with input shape: {x.shape}")
         y = [self.cv1(x)]  # Single transformation without splitting
         for m in self.m:
             y.append(m(y[-1]))  # Sequentially process through Bottleneck layers
-        print(f"[DEBUG] C2f.forward output shape: {out.shape}")
         return self.cv2(torch.cat(y, 1))  # Merge outputs
 
     def forward_split(self, x):
         """Forward pass using split() instead of chunk()."""
-        print(f"[DEBUG] C2f.forward_split called with input shape: {x.shape}")
+        LOGGER.info(f"[DEBUG] C2f.forward_split called with input shape: {x.shape}")
         y = self.cv1(x).split((self.c, self.c), 1)
         y = [y[0], y[1]]
-        y.extend(m(y[-1]) for m in self.m)
-        print(f"[DEBUG] C2f.forward_split output shape: {out.shape}")
+        y.extend(m(y[-1]) for m in self.m
         return self.cv2(torch.cat(y, 1))
 
 
