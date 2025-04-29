@@ -278,7 +278,7 @@ class C2(nn.Module):
 class C2f(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
-   def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
         """
         Args:
             c1 (int): Input channels.
@@ -289,7 +289,6 @@ class C2f(nn.Module):
             e (float): Expansion ratio.
         """
         super().__init__()
-        print(f"[DEBUG] C2f.__init__ called with c1={c1}, c2={c2}, n={n}, shortcut={shortcut}, g={g}, e={e}")
         self.c = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, self.c, 1, 1)  # Reduce input to hidden channels
         self.cv2 = Conv((1 + n) * self.c, c2, 1)  # Merge all features into output channels
@@ -297,7 +296,6 @@ class C2f(nn.Module):
 
     def forward(self, x):
         """Modified forward pass without splitting."""
-        LOGGER.info(f"[DEBUG] C2f.forward called with input shape: {x.shape}")
         y = [self.cv1(x)]  # Single transformation without splitting
         for m in self.m:
             y.append(m(y[-1]))  # Sequentially process through Bottleneck layers
@@ -305,7 +303,6 @@ class C2f(nn.Module):
 
     def forward_split(self, x):
         """Forward pass using split() instead of chunk()."""
-        LOGGER.info(f"[DEBUG] C2f.forward_split called with input shape: {x.shape}")
         y = self.cv1(x).split((self.c, self.c), 1)
         y = [y[0], y[1]]
         y.extend(m(y[-1]) for m in self.m
