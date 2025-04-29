@@ -305,7 +305,7 @@ class C2f(nn.Module):
         """Forward pass using split() instead of chunk()."""
         y = self.cv1(x).split((self.c, self.c), 1)
         y = [y[0], y[1]]
-        y.extend(m(y[-1]) for m in self.m
+        y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
 
 
