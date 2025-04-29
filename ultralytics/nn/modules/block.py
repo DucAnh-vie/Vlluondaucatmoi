@@ -276,37 +276,29 @@ class C2(nn.Module):
 
 
 class C2f(nn.Module):
-    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
+    """Simplified CSP bottleneck module with consistent channels."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1):
         """
         Args:
             c1 (int): Input channels.
             c2 (int): Output channels.
             n (int): Number of Bottleneck blocks.
-            shortcut (bool): Whether to use shortcut connections.
+            shortcut (bool): Use shortcut connections.
             g (int): Groups for convolutions.
-            e (float): Expansion ratio.
         """
         super().__init__()
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, self.c, 1, 1)  # Reduce input to hidden channels
-        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # Merge all features into output channels
+        self.c = c2 // (1 + n)  # Ensure total concatenated output = c2
+        self.cv1 = Conv(c1, self.c, 1, 1)
+        self.cv2 = Conv((1 + n) * self.c, c2, 1)
         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=(3, 3), e=1.0) for _ in range(n))
 
     def forward(self, x):
-        """Modified forward pass without splitting."""
-        y = [self.cv1(x)]  # Single transformation without splitting
+        y = [self.cv1(x)]
         for m in self.m:
-            y.append(m(y[-1]))  # Sequentially process through Bottleneck layers
-        return self.cv2(torch.cat(y, 1))  # Merge outputs
+            y.append(m(y[-1]))
+        return self.cv2(torch.cat(y, dim=1))
 
-    def forward_split(self, x):
-        """Forward pass using split() instead of chunk()."""
-        y = self.cv1(x).split((self.c, self.c), 1)
-        y = [y[0], y[1]]
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
 
 
 class C3(nn.Module):
