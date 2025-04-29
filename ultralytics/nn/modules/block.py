@@ -296,19 +296,12 @@ class C2f(nn.Module):
 
     def forward(self, x):
         """Modified forward pass without splitting."""
+        print(f"[DEBUG] C2f.forward called with input shape: {x.shape}")
         y = [self.cv1(x)]  # Single transformation without splitting
         for m in self.m:
             y.append(m(y[-1]))  # Sequentially process through Bottleneck layers
-        return self.cv2(torch.cat(y, 1))  # Merge outputs
-
-
-    def forward(self, x):
-        """Forward pass through C2f layer."""
-        print(f"[DEBUG] C2f.forward called with input shape: {x.shape}")
-        y = list(self.cv1(x).chunk(2, 1))
-        y.extend(m(y[-1]) for m in self.m)
         print(f"[DEBUG] C2f.forward output shape: {out.shape}")
-        return self.cv2(torch.cat(y, 1))
+        return self.cv2(torch.cat(y, 1))  # Merge outputs
 
     def forward_split(self, x):
         """Forward pass using split() instead of chunk()."""
