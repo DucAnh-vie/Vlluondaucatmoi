@@ -276,9 +276,9 @@ class C2(nn.Module):
 
 
 class C2f(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1):
         super().__init__()
-        self.c = c2 // (n + 1)
+        self.c = c2 // (n + 1)  # adjust hidden channels
         self.cv1 = Conv(c1, self.c, 1, 1)
         self.cv2 = Conv(self.c * (n + 1), c2, 1)
         self.m = nn.ModuleList([Bottleneck(self.c, self.c, shortcut, g, e=1.0) for _ in range(n)])
