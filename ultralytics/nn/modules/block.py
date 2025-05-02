@@ -276,19 +276,19 @@ class C2(nn.Module):
 
 
 class C2f(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=True, g=1):  # Must accept 5 args
+    def __init__(self, c1, c2, n=1):
         super().__init__()
-        self.c = c2 // 2  # hidden channels
+        self.c = c2 // 2
         self.cv1 = Conv(c1, self.c, 1, 1)
-        self.cv2 = Conv(self.c * (n + 1), c2, 1)
-        self.m = nn.ModuleList([Bottleneck(self.c, self.c, shortcut, g) for _ in range(n)])
-        self.shortcut = shortcut
-        self.n = n
+        self.m = nn.Sequential(*[Bottleneck(self.c, self.c) for _ in range(n)])
+        self.cv2 = Conv(self.c * (n + 1), c2, 1, 1)
 
     def forward(self, x):
-        y = [self.cv1(x)]
+        x = self.cv1(x)
+        y = [x]
         for m in self.m:
-            y.append(m(y[-1]))
+            x = m(x)
+            y.append(x)
         return self.cv2(torch.cat(y, dim=1))
 
 
