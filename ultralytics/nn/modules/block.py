@@ -278,10 +278,10 @@ class C2(nn.Module):
 class C2f(nn.Module):
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
         super().__init__()
-        c_ = int(c2 * e)
-        self.cv1 = Conv(c1, c_, 1, 1)
-        self.cv2 = Conv(c_ * (n + 1), c2, 1)
-        self.m = nn.ModuleList([Bottleneck(c_, c_, shortcut, g, e=1.0) for _ in range(n)])
+        self.c = c2 // (n + 1)
+        self.cv1 = Conv(c1, self.c, 1, 1)
+        self.cv2 = Conv(self.c * (n + 1), c2, 1)
+        self.m = nn.ModuleList([Bottleneck(self.c, self.c, shortcut, g, e=1.0) for _ in range(n)])
 
     def forward(self, x):
         y = [self.cv1(x)]
@@ -432,16 +432,15 @@ class GhostBottleneck(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    def __init__(self, c1, c2, shortcut=True, g=1, e=0.5):
+    def __init__(self, c1, c2, shortcut=True, g=1, e=1.0):
         super().__init__()
-        hidden_channels = int(c1 * e)  # input-based expansion
+        hidden_channels = int(c2 * e)
         self.cv1 = Conv(c1, hidden_channels, 1, 1)
         self.cv2 = Conv(hidden_channels, c2, 3, 1, g=g)
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
-        y = self.cv2(self.cv1(x))
-        return x + y if self.add else y
+        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
 
