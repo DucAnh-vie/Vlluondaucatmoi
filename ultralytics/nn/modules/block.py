@@ -275,7 +275,7 @@ class C2(nn.Module):
         return self.cv2(torch.cat((self.m(a), b), 1))
 
 
-class C2(nn.Module):
+class C2f(nn.Module):
     """Modified CSP Bottleneck block without split."""
 
     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
