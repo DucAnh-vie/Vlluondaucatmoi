@@ -275,29 +275,21 @@ class C2(nn.Module):
         return self.cv2(torch.cat((self.m(a), b), 1))
 
 
-class C2f(nn.Module):
-    """Simplified CSP bottleneck module with consistent channels."""
+class C2(nn.Module):
+    """Modified CSP Bottleneck block without split."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1):
-        """
-        Args:
-            c1 (int): Input channels.
-            c2 (int): Output channels.
-            n (int): Number of Bottleneck blocks.
-            shortcut (bool): Use shortcut connections.
-            g (int): Groups for convolutions.
-        """
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):
         super().__init__()
-        self.c = c2 // (1 + n)  # Ensure total concatenated output = c2
+        self.c = int(c2 * e)
         self.cv1 = Conv(c1, self.c, 1, 1)
-        self.cv2 = Conv((1 + n) * self.c, c2, 1)
-        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=(3, 3), e=1.0) for _ in range(n))
+        self.cv2 = Conv(self.c, c2, 1, 1)
+        self.m = nn.Sequential(*(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n)))
 
     def forward(self, x):
-        y = [self.cv1(x)]
-        for m in self.m:
-            y.append(m(y[-1]))
-        return self.cv2(torch.cat(y, dim=1))
+        x = self.cv1(x)
+        x = self.m(x)
+        return self.cv2(x)
+
 
 
 class C3(nn.Module):
