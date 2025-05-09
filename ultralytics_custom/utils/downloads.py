@@ -14,7 +14,7 @@ import torch
 from ultralytics_custom.utils import LOGGER, TQDM, checks, clean_url, emojis, is_online, url2file
 
 # Define Ultralytics GitHub assets maintained at https://github.com/ultralytics/assets
-GITHUB_ASSETS_REPO = "ultralytics_custom/assets"
+GITHUB_ASSETS_REPO = "ultralytics/assets"
 GITHUB_ASSETS_NAMES = frozenset(
     [f"yolov8{k}{suffix}.pt" for k in "nsmlx" for suffix in ("", "-cls", "-seg", "-pose", "-obb", "-oiv7")]
     + [f"yolo11{k}{suffix}.pt" for k in "nsmlx" for suffix in ("", "-cls", "-seg", "-pose", "-obb")]
@@ -76,7 +76,7 @@ def delete_dsstore(path, files_to_delete=(".DS_Store", "__MACOSX")):
         files_to_delete (tuple): The files to be deleted.
 
     Examples:
-        >>> from ultralytics_custom.utils.downloads import delete_dsstore
+        >>> from ultralytics.utils.downloads import delete_dsstore
         >>> delete_dsstore("path/to/dir")
 
     Notes:
@@ -105,7 +105,7 @@ def zip_directory(directory, compress=True, exclude=(".DS_Store", "__MACOSX"), p
         (Path): The path to the resulting zip file.
 
     Examples:
-        >>> from ultralytics_custom.utils.downloads import zip_directory
+        >>> from ultralytics.utils.downloads import zip_directory
         >>> file = zip_directory("path/to/dir")
     """
     from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
@@ -148,7 +148,7 @@ def unzip_file(file, path=None, exclude=(".DS_Store", "__MACOSX"), exist_ok=Fals
         (Path): The path to the directory where the zipfile was extracted.
 
     Examples:
-        >>> from ultralytics_custom.utils.downloads import unzip_file
+        >>> from ultralytics.utils.downloads import unzip_file
         >>> directory = unzip_file("path/to/file.zip")
     """
     from zipfile import BadZipFile, ZipFile, is_zipfile
@@ -239,7 +239,7 @@ def get_google_drive_file_info(link):
         (str): Original filename of the Google Drive file. If filename extraction fails, returns None.
 
     Examples:
-        >>> from ultralytics_custom.utils.downloads import get_google_drive_file_info
+        >>> from ultralytics.utils.downloads import get_google_drive_file_info
         >>> link = "https://drive.google.com/file/d/1cqT-cJgANNrhIHCrEufUYhQ4RqiWG_lJ/view?usp=drive_link"
         >>> url, filename = get_google_drive_file_info(link)
     """
@@ -299,7 +299,7 @@ def safe_download(
         (Path | str): The path to the downloaded file or extracted directory.
 
     Examples:
-        >>> from ultralytics_custom.utils.downloads import safe_download
+        >>> from ultralytics.utils.downloads import safe_download
         >>> link = "https://ultralytics.com/assets/bus.jpg"
         >>> path = safe_download(link)
     """
@@ -369,13 +369,13 @@ def safe_download(
     return f
 
 
-def get_github_assets(repo="ultralytics_custom/assets", version="latest", retry=False):
+def get_github_assets(repo="ultralytics/assets", version="latest", retry=False):
     """
     Retrieve the specified version's tag and assets from a GitHub repository. If the version is not specified, the
     function fetches the latest release assets.
 
     Args:
-        repo (str, optional): The GitHub repository in the format 'owner/repo'. Defaults to 'ultralytics_custom/assets'.
+        repo (str, optional): The GitHub repository in the format 'owner/repo'. Defaults to 'ultralytics/assets'.
         version (str, optional): The release version to fetch assets from. Defaults to 'latest'.
         retry (bool, optional): Flag to retry the request in case of a failure. Defaults to False.
 
@@ -384,7 +384,7 @@ def get_github_assets(repo="ultralytics_custom/assets", version="latest", retry=
         (List[str]): A list of asset names.
 
     Examples:
-        >>> tag, assets = get_github_assets(repo="ultralytics_custom/assets", version="latest")
+        >>> tag, assets = get_github_assets(repo="ultralytics/assets", version="latest")
     """
     if version != "latest":
         version = f"tags/{version}"  # i.e. tags/v6.2
@@ -399,13 +399,13 @@ def get_github_assets(repo="ultralytics_custom/assets", version="latest", retry=
     return data["tag_name"], [x["name"] for x in data["assets"]]  # tag, assets i.e. ['yolo11n.pt', 'yolov8s.pt', ...]
 
 
-def attempt_download_asset(file, repo="ultralytics_custom/assets", release="v8.3.0", **kwargs):
+def attempt_download_asset(file, repo="ultralytics/assets", release="v8.3.0", **kwargs):
     """
     Attempt to download a file from GitHub release assets if it is not found locally.
 
     Args:
         file (str | Path): The filename or file path to be downloaded.
-        repo (str, optional): The GitHub repository in the format 'owner/repo'. Defaults to 'ultralytics_custom/assets'.
+        repo (str, optional): The GitHub repository in the format 'owner/repo'. Defaults to 'ultralytics/assets'.
         release (str, optional): The specific release version to be downloaded. Defaults to 'v8.3.0'.
         **kwargs (Any): Additional keyword arguments for the download process.
 
@@ -413,7 +413,7 @@ def attempt_download_asset(file, repo="ultralytics_custom/assets", release="v8.3
         (str): The path to the downloaded file.
 
     Examples:
-        >>> file_path = attempt_download_asset("yolo11n.pt", repo="ultralytics_custom/assets", release="latest")
+        >>> file_path = attempt_download_asset("yolo11n.pt", repo="ultralytics/assets", release="latest")
     """
     from ultralytics_custom.utils import SETTINGS  # scoped for circular import
 
