@@ -1,5 +1,5 @@
 import argparse
-from ultralytics.models.yolo.detect import DetectionTrainer, DetectionValidator
+from ultralytics_custom.models.yolo.detect import DetectionTrainer, DetectionValidator
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train và Validate YOLO model")
