@@ -290,8 +290,6 @@ class C2f(nn.Module):
 
     def forward(self, x):
         y_raw = self.cv1(x)
-        y1, y2 = y_raw.chunk(2, 1)  # keep compatibility without chunking in user logic
-        y = [y1, y2]
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, dim=1))
 
