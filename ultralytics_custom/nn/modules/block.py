@@ -200,14 +200,26 @@ class SPP(nn.Module):
 class SPPF(nn.Module):
     """Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher."""
 
-   def __init__(self, c1, c2):
+   def __init__(self, c1, c2, k=(5, 9, 13)):
+        """
+        Initialize the SPP layer with input/output channels and pooling kernel sizes.
+
+        Args:
+            c1 (int): Input channels.
+            c2 (int): Output channels.
+            k (Tuple[int, int, int]): Kernel sizes for max pooling.
+        """
         super().__init__()
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.conv = Conv(c1, c2, 1)
+        c_ = c1 // 2  # hidden channels
+        self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv2 = Conv(c_ * (len(k) + 1), c2, 1, 1)
+        self.m = nn.ModuleList([nn.MaxPool2d(kernel_size=x, stride=1, padding=x // 2) for x in k])
 
     def forward(self, x):
-        x = self.pool(x)
-        return self.conv(x)
+        """Forward pass of the SPP layer, performing spatial pyramid pooling."""
+        x = self.cv1(x)
+        return self.cv2(torch.cat([x] + [m(x) for m in self.m], 1))
+
 
 
 class C1(nn.Module):
