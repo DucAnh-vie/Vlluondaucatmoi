@@ -25,6 +25,7 @@ __all__ = (
 )
 
 
+# ultralytics/nn/modules/conv.py (Your provided version)
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
     """Pad to 'same' shape outputs."""
     if d > 1:
@@ -33,19 +34,23 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
         p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
     return p
 
-
 class Conv(nn.Module):
-    default_act = nn.SiLU()
+    """
+    Standard convolution module with batch normalization and activation.
+    """
+    default_act = nn.SiLU()  # default activation
 
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
         super().__init__()
-        # To force smaller kernels IF k is not specified (less common for YOLO):
-        # k_to_use = 1 if k is None else k # Example: force k=1 if not given
-        # self.conv = nn.Conv2d(c1, c2, k_to_use, s, autopad(k_to_use, p, d), groups=g, dilation=d, bias=False)
         self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
         self.bn = nn.BatchNorm2d(c2)
         self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
 
+    def forward(self, x): # THIS IS PRESENT AND CORRECT
+        return self.act(self.bn(self.conv(x)))
+
+    def forward_fuse(self, x): # THIS IS PRESENT AND CORRECT
+        return self.act(self.conv(x))
 
 class Conv2(Conv):
     """
