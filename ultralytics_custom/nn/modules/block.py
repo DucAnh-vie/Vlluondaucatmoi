@@ -442,7 +442,8 @@ class Bottleneck(nn.Module):
     Default: Smaller kernels (1x1, 1x1), smaller expansion (e=0.25).
     Shortcut: Standard residual connection (adds input x to output of convs if c1==c2).
     """
-    def __init__(self, c1_in, c2_out, shortcut=True, g=1, k_tuple=((1, 1), (1, 1)), e=0.25): # Renamed k to k_tuple for clarity
+    # --- CORRECTED __init__ SIGNATURE ---
+    def __init__(self, c1_in, c2_out, shortcut=True, g=1, k=((1, 1), (1, 1)), e=0.25): # Use 'k' here
         super().__init__()
         self.c1_in = c1_in
         self.c2_out = c2_out
@@ -450,11 +451,11 @@ class Bottleneck(nn.Module):
         c_hidden = int(c2_out * e)
         c_hidden = max(1, c_hidden)
         if g > 1:
-            c_hidden = max(g, (c_hidden // g) * g)
+            c_hidden = max(g, (c_hidden // g) * g) # Make divisible by g, ensuring it's at least g
 
-        # --- CORRECTED Conv CALLS ---
-        self.cv1 = Conv(c1_in, c_hidden, k=k_tuple[0], s=1) # Use 'k' for kernel_size
-        self.cv2 = Conv(c_hidden, c2_out, k=k_tuple[1], s=1, g=g) # Use 'k' for kernel_size
+        # Use the 'k' argument (which is a tuple) to get individual kernel sizes
+        self.cv1 = Conv(c1_in, c_hidden, k=k[0], s=1) # Access k[0]
+        self.cv2 = Conv(c_hidden, c2_out, k=k[1], s=1, g=g) # Access k[1]
         
         self.add = shortcut and c1_in == c2_out
 
