@@ -433,9 +433,8 @@ class GhostBottleneck(nn.Module):
         """Apply skip connection and concatenation to input tensor."""
         return self.conv(x) + self.shortcut(x)
 
-
 # ultralytics_custom/nn/modules/block.py
-from .conv import Conv # Assuming Conv is correctly defined in .conv
+from .conv import Conv # Assuming Conv is correctly defined in .conv as you provided
 
 class Bottleneck(nn.Module):
     """
@@ -443,30 +442,26 @@ class Bottleneck(nn.Module):
     Default: Smaller kernels (1x1, 1x1), smaller expansion (e=0.25).
     Shortcut: Standard residual connection (adds input x to output of convs if c1==c2).
     """
-    def __init__(self, c1_in, c2_out, shortcut=True, g=1, k=((1, 1), (1, 1)), e=0.25):
+    def __init__(self, c1_in, c2_out, shortcut=True, g=1, k_tuple=((1, 1), (1, 1)), e=0.25): # Renamed k to k_tuple for clarity
         super().__init__()
-        self.c1_in = c1_in # Store for potential use in forward if needed, though not strictly for this version
-        self.c2_out = c2_out # Store for potential use
+        self.c1_in = c1_in
+        self.c2_out = c2_out
 
-        c_hidden = int(c2_out * e)  # Hidden channels based on output channels and expansion
-        # Ensure c_hidden is at least 1, and also typically make it divisible by groups 'g' if g > 1
+        c_hidden = int(c2_out * e)
         c_hidden = max(1, c_hidden)
         if g > 1:
-            c_hidden = max(g, (c_hidden // g) * g) # Make divisible by g, ensuring it's at least g
+            c_hidden = max(g, (c_hidden // g) * g)
 
-        self.cv1 = Conv(c1_in, c_hidden, kernel_size=k[0], stride=1) # k[0] is kernel for first conv
-        self.cv2 = Conv(c_hidden, c2_out, kernel_size=k[1], stride=1, groups=g) # k[1] is kernel for second conv
+        # --- CORRECTED Conv CALLS ---
+        self.cv1 = Conv(c1_in, c_hidden, k=k_tuple[0], s=1) # Use 'k' for kernel_size
+        self.cv2 = Conv(c_hidden, c2_out, k=k_tuple[1], s=1, g=g) # Use 'k' for kernel_size
         
         self.add = shortcut and c1_in == c2_out
 
     def forward(self, x):
-        # Standard residual connection
-        # The input 'x' has c1_in channels.
-        # The output of self.cv2(self.cv1(x)) will have c2_out channels.
-        
         out = self.cv2(self.cv1(x))
         
-        if self.add: # self.add is True if shortcut=True AND c1_in == c2_out
+        if self.add:
             return x + out
         else:
             return out
