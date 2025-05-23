@@ -434,46 +434,42 @@ class GhostBottleneck(nn.Module):
         return self.conv(x) + self.shortcut(x)
 
 
+# ultralytics_custom/nn/modules/block.py
+from .conv import Conv # Assuming Conv is correctly defined in .conv
+
 class Bottleneck(nn.Module):
-    """Modified Bottleneck with shortcut between conv1 and conv2."""
-    # Original: def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
-    def __init__(self, c1, c2, shortcut=True, g=1, k=((1, 1), (3, 1)), e=0.25): # MODIFIED DEFAULTS
+    """
+    Modified Bottleneck.
+    Default: Smaller kernels (1x1, 1x1), smaller expansion (e=0.25).
+    Shortcut: Standard residual connection (adds input x to output of convs if c1==c2).
+    """
+    def __init__(self, c1_in, c2_out, shortcut=True, g=1, k=((1, 1), (1, 1)), e=0.25):
         super().__init__()
-        c_ = int(c2 * e)  # hidden channels - Now smaller due to e=0.25 default
-        self.cv1 = Conv(c1, c_, k[0], 1) # k[0] is now 1x1 by default
-        self.cv2 = Conv(c_, c2, k[1], 1, g=g) # k[1] is now 3x1 by default
-        # self.shortcut = shortcut and c1 == c_ # Original shortcut condition
-        # If c_ is now much smaller, c1 == c_ might often be False.
-        # Consider if shortcut logic needs to adapt or if it's okay for it to be less frequent.
-        # Forcing shortcut if c1==c2 (output channels match input) and shortcut=True
-        self.shortcut = shortcut and c1 == c2
+        self.c1_in = c1_in # Store for potential use in forward if needed, though not strictly for this version
+        self.c2_out = c2_out # Store for potential use
+
+        c_hidden = int(c2_out * e)  # Hidden channels based on output channels and expansion
+        # Ensure c_hidden is at least 1, and also typically make it divisible by groups 'g' if g > 1
+        c_hidden = max(1, c_hidden)
+        if g > 1:
+            c_hidden = max(g, (c_hidden // g) * g) # Make divisible by g, ensuring it's at least g
+
+        self.cv1 = Conv(c1_in, c_hidden, kernel_size=k[0], stride=1) # k[0] is kernel for first conv
+        self.cv2 = Conv(c_hidden, c2_out, kernel_size=k[1], stride=1, groups=g) # k[1] is kernel for second conv
+        
+        self.add = shortcut and c1_in == c2_out
 
     def forward(self, x):
-        out = self.cv1(x)
-        # The original shortcut: "shortcut between conv1 and conv2"
-        # This means the input 'x' is added to the output of 'cv1' before 'cv2'
-        # This requires c1 == c_ (input channels to Bottleneck == hidden channels)
-        # With e=0.25, c_ will be c2*0.25. So c1 needs to be c2*0.25 for this specific shortcut.
-        # This is a bit unusual for standard ResNet bottlenecks.
-        # Let's assume the comment meant a standard residual connection:
-        # residual = x
-        # out = self.cv1(x)
-        # out = self.cv2(out)
-        # if self.shortcut: # self.shortcut now checks c1==c2
-        #     out += residual
-        # return out
-
-        # Sticking to your described "shortcut between conv1 and conv2":
-        # This means x (input to bottleneck) must have same channels as output of cv1 (c_).
-        # So, if self.shortcut is True, it implies c1 == c_
-        if self.shortcut and c1 == c_: # Re-evaluating shortcut based on your description
-             out = self.cv1(x) + x
-             return self.cv2(out)
+        # Standard residual connection
+        # The input 'x' has c1_in channels.
+        # The output of self.cv2(self.cv1(x)) will have c2_out channels.
+        
+        out = self.cv2(self.cv1(x))
+        
+        if self.add: # self.add is True if shortcut=True AND c1_in == c2_out
+            return x + out
         else:
-            # If no shortcut, or c1 != c_
-            out = self.cv1(x)
-            return self.cv2(out)
-
+            return out
 
 class BottleneckCSP(nn.Module):
     """CSP Bottleneck https://github.com/WongKinYiu/CrossStagePartialNetworks."""
