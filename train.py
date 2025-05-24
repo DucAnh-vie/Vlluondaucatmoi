@@ -7,10 +7,12 @@ def parse_args():
                         help="Weights/config của model")
     parser.add_argument("-d", "--data",  type=str, required=True,
                         help="Đường dẫn tới file dataset.yaml")
-    parser.add_argument("-e", "--epochs", type=int, default=100,
+    parser.add_argument("-e", "--epochs", type=int, default=50,
                         help="Số epoch khi train")
     parser.add_argument("-i", "--imgsz", type=int, default=640,
                         help="Kích thước ảnh")
+    parser.add_argument("-p", "--pretrained", type=bool, default="True",
+                        help="Model đã được huấn luyện")
     return parser.parse_args()
 
 def main():
