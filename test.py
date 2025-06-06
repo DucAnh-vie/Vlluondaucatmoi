@@ -8,9 +8,10 @@ from ultralytics_custom.engine.predictor import BasePredictor
 from ultralytics_custom.engine.results import Results
 from ultralytics_custom.utils import ops
 
+
 class DetectionPredictor(BasePredictor):
     """Custom Detection Predictor that properly handles postprocessing."""
-    
+
     def postprocess(self, preds, img, orig_imgs):
         """Apply Non-maximum suppression to prediction outputs."""
         preds = ops.non_max_suppression(
@@ -19,20 +20,45 @@ class DetectionPredictor(BasePredictor):
             getattr(self.args, 'iou', 0.45),  # Default IOU threshold
             agnostic=getattr(self.args, 'agnostic_nms', False),
             max_det=getattr(self.args, 'max_det', 300),
-            classes=getattr(self.args, 'classes', None),
         )
 
-        if not isinstance(orig_imgs, list):  # input images are a torch.Tensor, not a list
-            orig_imgs = ops.convert_torch2numpy_batch(orig_imgs)
+        # Move predictions to the same device as model
+        if isinstance(preds, (list, tuple)):
+            preds = [p.to(self.model.device) if isinstance(p, torch.Tensor) else p for p in preds]
+        elif isinstance(preds, torch.Tensor):
+            preds = preds.to(self.model.device)
 
         results = []
         for i, pred in enumerate(preds):
-            orig_img = orig_imgs[i]
-            if len(pred):
-                pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], orig_img.shape)
-            img_path = self.batch[0][i]
-            results.append(Results(orig_img, path=img_path, names=self.model.names, boxes=pred))
+            shape = orig_imgs[i].shape if isinstance(orig_imgs, list) else orig_imgs.shape
+            path = self.batch[i]
+
+            if not pred.shape[0]:
+                results.append(Results(orig_img=orig_imgs[i], path=path, names=self.model.names))
+                continue
+
+            pred[:, :4] = ops.scale_coords(img.shape[2:], pred[:, :4], shape).round()
+
+            results.append(Results(
+                orig_img=orig_imgs[i],
+                path=path,
+                names=self.model.names,
+                boxes=pred
+            ))
+
         return results
+
+    def preprocess(self, img):
+        img = super().preprocess(img)
+        return img.to(self.model.device).float() / 255.0  # Normalize and move to GPU
+
+    def warmup(self, imgsz=(1, 3, 640, 640)):
+        # Warm up model with empty input to initialize GPU memory
+        if not isinstance(imgsz, torch.Size):
+            imgsz = torch.Size(imgsz)
+        dummy_input = torch.zeros(*imgsz, device=self.model.device)
+        with torch.no_grad():
+            self.model(dummy_input)
 
 def get_limited_images(source_dir, max_images=1000):
     """Lấy tối đa max_images ảnh từ thư mục."""
