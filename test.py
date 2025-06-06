@@ -55,7 +55,7 @@ def get_limited_images(source_dir, max_images=1000):
 
 model_path = '/content/best.pt'
 source_dir = '/content/test_images'
-max_images = 100  # Số ảnh tối đa muốn test
+max_images = 4000  # Số ảnh tối đa muốn test
 
 # Giải phóng RAM trước khi chạy
 gc.collect()
